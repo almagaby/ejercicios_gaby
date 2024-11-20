@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmotionAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Glassmorphism Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb, #93c5fd);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+            color: #f9fafb;
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .glass-container {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 15px;
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-container:hover {
+            transform: scale(1.03);
+            box-shadow: 0 16px 48px rgba(31, 38, 135, 0.5);
+        }
+
+        .btn-primary {
+            background-color: rgba(59, 130, 246, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: rgba(59, 130, 246, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .progress-container {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #2563eb, #93c5fd);
+            width: 0;
+            height: 8px;
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex justify-center items-center">
+    <div class="glass-container max-w-3xl w-full p-6">
+        <h1 class="text-4xl font-extrabold text-center mb-6">EmotionAI</h1>
+
+        <div class="md:flex">
+            <!-- File Upload -->
+            <div class="md:w-1/2 p-4">
+                <h2 class="text-xl font-semibold mb-4">Sube una imagen</h2>
+                <form id="uploadForm">
+                    <label class="glass-container h-40 flex flex-col items-center justify-center border-dashed cursor-pointer">
+                        <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-14 h-14 text-blue-300" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                        </svg>
+                        <p class="mt-2 text-sm text-blue-200">Arrastra o selecciona una imagen</p>
+                    </label>
+                    <button type="submit" class="btn-primary w-full mt-4">Analizar Emoción</button>
+                </form>
+
+                <!-- Progress Bar -->
+                <div id="progressSection" class="hidden mt-6">
+                    <h2 class="text-lg font-medium mb-2">Progreso del Análisis</h2>
+                    <div class="progress-container">
+                        <div id="progress" class="progress-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Error -->
+                <div id="error" class="hidden mt-4 text-sm text-red-400"></div>
+            </div>
+
+            <!-- Results -->
+            <div class="md:w-1/2 p-4">
+                <h2 class="text-xl font-semibold mb-4">Resultados</h2>
+                <div id="results" class="hidden glass-container">
+                    <img id="resultImage" class="max-w-full h-auto" src="" alt="Resultado">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $('#uploadForm').on('submit', function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                $('#progressSection').removeClass('hidden');
+                $('#progress').css('width', '0%');
+
+                $.ajax({
+                    url: '/analyze',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    xhr: function () {
+                        const xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener('progress', function (e) {
+                            if (e.lengthComputable) {
+                                const percent = (e.loaded / e.total) * 100;
+                                $('#progress').css('width', percent + '%');
+                            }
+                        });
+                        return xhr;
+                    },
+                    success: function (response) {
+                        $('#results').removeClass('hidden');
+                        $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                    },
+                    error: function (xhr) {
+                        $('#error').text(xhr.responseJSON?.error || 'Error inesperado').removeClass('hidden');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
